@@ -1,3 +1,4 @@
+import ida_ida
 import idaapi
 
 EA64 = None
@@ -40,7 +41,12 @@ def init():
     """All tinfo should be reinitialized between session. Otherwise they could have wrong type"""
     global VOID_TINFO, PVOID_TINFO, CONST_PVOID_TINFO, BYTE_TINFO, PBYTE_TINFO, LEGAL_TYPES, X_WORD_TINFO, PX_WORD_TINFO, DUMMY_FUNC, CONST_PCHAR_TINFO, CHAR_TINFO, PCHAR_TINFO, CONST_VOID_TINFO, WORD_TINFO, PWORD_TINFO, EA64, EA_SIZE
 
-    EA64 = idaapi.get_inf_structure().is_64bit()
+    try:
+        # IDA >= 9
+        EA64 = not ida_ida.inf_is_32bit_exactly()
+    except AttributeError:
+        EA64 = idaapi.get_inf_structure().is_64bit()
+
     EA_SIZE = 8 if EA64 else 4
 
     VOID_TINFO = idaapi.tinfo_t(idaapi.BT_VOID)

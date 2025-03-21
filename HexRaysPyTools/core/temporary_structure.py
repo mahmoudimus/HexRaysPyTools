@@ -1,16 +1,13 @@
 import bisect
 import itertools
-from PyQt5 import QtCore, QtGui, QtWidgets
 
+import HexRaysPyTools.api as api
 import idaapi
 import idc
-
-from . import common
-from . import const
-from . import helper
-import HexRaysPyTools.api as api
 from HexRaysPyTools.forms import MyChoose
+from PyQt5 import QtCore, QtGui, QtWidgets
 
+from . import common, const, helper
 
 SCORE_TABLE = dict(
     (v, k)
@@ -342,7 +339,7 @@ class VirtualTable(AbstractMember):
 
         if ordinal:
             print("[Info] Virtual table " + self.vtable_name + " added to Local Types")
-            return idaapi.import_type(idaapi.cvar.idati, -1, self.vtable_name)
+            return idc.import_type(idaapi.cvar.idati, -1, self.vtable_name)
         else:
             print("[Error] Failed to create virtual table " + self.vtable_name)
             print("*" * 100)

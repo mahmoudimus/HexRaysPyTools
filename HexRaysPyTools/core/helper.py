@@ -1,14 +1,13 @@
 import collections
 import logging
 
-import idaapi
-import idc
-
 import HexRaysPyTools.core.cache as cache
 import HexRaysPyTools.core.const as const
-import HexRaysPyTools.settings as settings
 import HexRaysPyTools.forms as forms
-
+import HexRaysPyTools.settings as settings
+import ida_ida
+import idaapi
+import idc
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,12 @@ def is_imported_ea(ea):
 
 
 def is_code_ea(ea):
-    if idaapi.cvar.inf.procname == "ARM":
+    try:
+        procname = ida_ida.inf_get_procname()
+    except AttributeError:
+        procname = idaapi.cvar.inf.procname
+
+    if procname == "ARM":
         # In case of ARM code in THUMB mode we sometimes get pointers with thumb bit set
         flags = idaapi.get_full_flags(ea & -2)  # flags_t
     else:

@@ -1,14 +1,15 @@
-import idaapi
-from . import actions
 import HexRaysPyTools.api as api
 import HexRaysPyTools.core.cache as cache
 import HexRaysPyTools.core.helper as helper
-from ..core.variable_scanner import (
-    NewShallowSearchVisitor,
-    NewDeepSearchVisitor,
-    DeepReturnVisitor,
-)
+import idaapi
+
 from ..core.temporary_structure import TemporaryStructureModel
+from ..core.variable_scanner import (
+    DeepReturnVisitor,
+    NewDeepSearchVisitor,
+    NewShallowSearchVisitor,
+)
+from . import actions
 
 
 class Scanner(actions.HexRaysPopupAction):
@@ -138,7 +139,11 @@ class DeepScanFunctions(actions.Action):
                 NewDeepSearchVisitor(cfunc, 0, obj, cache.temporary_structure).process()
 
     def update(self, ctx):
-        if ctx.form_type == idaapi.BWN_FUNCS:
+        type_ = getattr(ctx, "widget_type", None)
+        if not type_:
+            type_ = ctx.form_type
+
+        if type_ == idaapi.BWN_FUNCS:
             idaapi.attach_action_to_popup(ctx.widget, None, self.name)
             return idaapi.AST_ENABLE_FOR_WIDGET
         return idaapi.AST_DISABLE_FOR_WIDGET
