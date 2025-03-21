@@ -138,7 +138,10 @@ class SpaghettiVisitor(idaapi.ctree_parentee_t):
             cit_then = cif.ithen
 
             # Skip if only one (not "if") statement in "then" branch
-            if cit_then.cblock.size() == 1 and cit_then.cblock.front().op != idaapi.cit_if:
+            if (
+                cit_then.cblock.size() == 1
+                and cit_then.cblock.front().op != idaapi.cit_if
+            ):
                 return 0
 
             inverse_if_condition(cif)
@@ -175,7 +178,9 @@ class SilentIfSwapper(callbacks.HexRaysEventHandler):
         cfunc, level_of_maturity = args
         if level_of_maturity == idaapi.CMAT_TRANS1 and has_inverted(cfunc.entry_ea):
             # Make RVA from VA of IF instructions that should be inverted
-            inverted = [n + idaapi.get_imagebase() for n in get_inverted(cfunc.entry_ea)]
+            inverted = [
+                n + idaapi.get_imagebase() for n in get_inverted(cfunc.entry_ea)
+            ]
             visitor = SwapThenElseVisitor(inverted)
             visitor.apply_to(cfunc.body, None)
         elif level_of_maturity == idaapi.CMAT_TRANS2:

@@ -6,8 +6,8 @@ import HexRaysPyTools.forms
 from . import helper
 
 
-all_virtual_functions = {}      # name    -> VirtualMethod
-all_virtual_tables = {}         # ordinal -> VirtualTable
+all_virtual_functions = {}  # name    -> VirtualMethod
+all_virtual_tables = {}  # ordinal -> VirtualTable
 
 
 class VirtualMethod(object):
@@ -19,7 +19,9 @@ class VirtualMethod(object):
         self.name_modified = False
         self.parents = [parent]
         image_base = idaapi.get_imagebase()
-        self.ra_addresses = [ea - image_base for ea in helper.get_virtual_func_addresses(name)]
+        self.ra_addresses = [
+            ea - image_base for ea in helper.get_virtual_func_addresses(name)
+        ]
 
         self.rowcount = 0
         self.children = []
@@ -62,10 +64,13 @@ class VirtualMethod(object):
                 return True
         elif column == 1:
             tinfo = idaapi.tinfo_t()
-            split = value.split('(')
+            split = value.split("(")
             if len(split) == 2:
-                value = split[0] + ' ' + self.name + '(' + split[1] + ';'
-                if idaapi.parse_decl(tinfo, idaapi.cvar.idati, value, idaapi.PT_TYP) is not None:
+                value = split[0] + " " + self.name + "(" + split[1] + ";"
+                if (
+                    idaapi.parse_decl(tinfo, idaapi.cvar.idati, value, idaapi.PT_TYP)
+                    is not None
+                ):
                     if tinfo.is_func():
                         tinfo.create_ptr(tinfo)
                         if tinfo.dstr() != self.tinfo.dstr():
@@ -87,9 +92,12 @@ class VirtualMethod(object):
         if column != 2:
             if len(self.addresses) == 1:
                 # Virtual function has only one address. Allow to modify its signature and name
-                return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable
+                return (
+                    QtCore.Qt.ItemIsSelectable
+                    | QtCore.Qt.ItemIsEnabled
+                    | QtCore.Qt.ItemIsEditable
+                )
         return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
-
 
     @property
     def color(self):
@@ -109,12 +117,17 @@ class VirtualMethod(object):
         func_data = idaapi.func_type_data_t()
         func_tinfo = self.tinfo.get_pointed_object()
         class_tinfo = idaapi.tinfo_t()
-        if func_tinfo.get_func_details(func_data) and func_tinfo.get_nargs() and \
-                class_tinfo.get_named_type(idaapi.cvar.idati, name):
+        if (
+            func_tinfo.get_func_details(func_data)
+            and func_tinfo.get_nargs()
+            and class_tinfo.get_named_type(idaapi.cvar.idati, name)
+        ):
             class_tinfo.create_ptr(class_tinfo)
             first_arg_tinfo = func_data[0].type
-            if (first_arg_tinfo.is_ptr() and first_arg_tinfo.get_pointed_object().is_udt()) or \
-                    helper.is_legal_type(func_data[0].type):
+            if (
+                first_arg_tinfo.is_ptr()
+                and first_arg_tinfo.get_pointed_object().is_udt()
+            ) or helper.is_legal_type(func_data[0].type):
                 func_data[0].type = class_tinfo
                 func_data[0].name = "this"
                 func_tinfo.create_func(func_data)
@@ -125,7 +138,9 @@ class VirtualMethod(object):
                     for parent in self.parents:
                         parent.modified = True
             else:
-                print("[Warning] function {0} probably have wrong type".format(self.name))
+                print(
+                    "[Warning] function {0} probably have wrong type".format(self.name)
+                )
 
     def open_function(self):
         addresses = self.addresses
@@ -152,7 +167,9 @@ class VirtualMethod(object):
         if self.tinfo_modified:
             self.tinfo_modified = False
             if len(addresses) == 1:
-                idaapi.apply_tinfo(addresses[0], self.tinfo.get_pointed_object(), idaapi.TINFO_DEFINITE)
+                idaapi.apply_tinfo(
+                    addresses[0], self.tinfo.get_pointed_object(), idaapi.TINFO_DEFINITE
+                )
 
     def __eq__(self, other):
         return self.addresses == other.addresses
@@ -181,10 +198,14 @@ class VirtualTable(object):
             self.name = vtable_tinfo.dstr()
             self.modified = False
             if len(self.virtual_functions) == len(udt_data):
-                for current_function, other_function in zip(self.virtual_functions, udt_data):
+                for current_function, other_function in zip(
+                    self.virtual_functions, udt_data
+                ):
                     current_function.update(other_function.name, other_function.type)
             else:
-                print("[ERROR] Something have been modified in Local types. Please refresh this view")
+                print(
+                    "[ERROR] Something have been modified in Local types. Please refresh this view"
+                )
 
     def update_local_type(self):
         if self.modified:
@@ -192,15 +213,21 @@ class VirtualTable(object):
             udt_data = idaapi.udt_type_data_t()
             self.tinfo.get_udt_details(udt_data)
             if len(udt_data) == len(self.virtual_functions):
-                for udt_member, virtual_function in zip(udt_data, self.virtual_functions):
+                for udt_member, virtual_function in zip(
+                    udt_data, self.virtual_functions
+                ):
                     udt_member.name = virtual_function.name
                     udt_member.type = virtual_function.tinfo
                     virtual_function.commit()
                 final_tinfo.create_udt(udt_data, idaapi.BTF_STRUCT)
-                final_tinfo.set_numbered_type(idaapi.cvar.idati, self.ordinal, idaapi.NTF_REPLACE, self.name)
+                final_tinfo.set_numbered_type(
+                    idaapi.cvar.idati, self.ordinal, idaapi.NTF_REPLACE, self.name
+                )
                 self.modified = False
             else:
-                print("[ERROR] Something have been modified in Local types. Please refresh this view")
+                print(
+                    "[ERROR] Something have been modified in Local types. Please refresh this view"
+                )
 
     def set_first_argument_type(self, class_name):
         for function in self.virtual_functions:
@@ -221,8 +248,13 @@ class VirtualTable(object):
     def create(tinfo, class_):
         ordinal = idaapi.get_type_ordinal(idaapi.cvar.idati, tinfo.dstr())
         if ordinal == 0:
-            if idaapi.import_type(idaapi.cvar.idati, -1, tinfo.dstr(), 0) == idaapi.BADNODE:
-                raise ImportError("unable to import type to idb ({})".format(tinfo.dstr()))
+            if (
+                idaapi.import_type(idaapi.cvar.idati, -1, tinfo.dstr(), 0)
+                == idaapi.BADNODE
+            ):
+                raise ImportError(
+                    "unable to import type to idb ({})".format(tinfo.dstr())
+                )
             ordinal = idaapi.get_type_ordinal(idaapi.cvar.idati, tinfo.dstr())
 
         result = all_virtual_tables.get(ordinal)
@@ -232,7 +264,9 @@ class VirtualTable(object):
             udt_data = idaapi.udt_type_data_t()
             tinfo.get_udt_details(udt_data)
             result = VirtualTable(ordinal, tinfo, class_)
-            virtual_functions = [VirtualMethod.create(func.type, func.name, result) for func in udt_data]
+            virtual_functions = [
+                VirtualMethod.create(func.type, func.name, result) for func in udt_data
+            ]
             result.virtual_functions = virtual_functions
             all_virtual_functions[ordinal] = result
         return result
@@ -268,7 +302,11 @@ class VirtualTable(object):
 
     def flags(self, column):
         if column == 0:
-            return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled
+            return (
+                QtCore.Qt.ItemIsSelectable
+                | QtCore.Qt.ItemIsEditable
+                | QtCore.Qt.ItemIsEnabled
+            )
         return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
     @property
@@ -327,7 +365,9 @@ class Class(object):
                     # TODO: drop class
                     raise IndexError
         except IndexError:
-            print("[ERROR] Something have been modified in Local types. Please refresh this view")
+            print(
+                "[ERROR] Something have been modified in Local types. Please refresh this view"
+            )
 
     def update_local_type(self):
         if self.modified:
@@ -337,7 +377,9 @@ class Class(object):
             tinfo = idaapi.tinfo_t()
             self.tinfo.get_udt_details(udt_data)
             tinfo.create_udt(udt_data, idaapi.BTF_STRUCT)
-            tinfo.set_numbered_type(idaapi.cvar.idati, self.ordinal, idaapi.NTF_REPLACE, self.name)
+            tinfo.set_numbered_type(
+                idaapi.cvar.idati, self.ordinal, idaapi.NTF_REPLACE, self.name
+            )
             self.modified = False
 
     def set_first_argument_type(self, class_name):
@@ -346,7 +388,11 @@ class Class(object):
 
     def has_function(self, regexp):
         for vtable in list(self.vtables.values()):
-            if [func for func in vtable.virtual_functions if regexp.indexIn(func.name) >= 0]:
+            if [
+                func
+                for func in vtable.virtual_functions
+                if regexp.indexIn(func.name) >= 0
+            ]:
                 return True
         return False
 
@@ -378,7 +424,11 @@ class Class(object):
 
     def flags(self, column):
         if column == 0:
-            return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled
+            return (
+                QtCore.Qt.ItemIsSelectable
+                | QtCore.Qt.ItemIsEditable
+                | QtCore.Qt.ItemIsEnabled
+            )
         return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
     @property
@@ -459,7 +509,10 @@ class TreeModel(QtCore.QAbstractItemModel):
             class_item = TreeItem(class_, root)
             for vtable in class_.vtables.values():
                 vtable_item = TreeItem(vtable, class_item)
-                vtable_item.children = [TreeItem(function, vtable_item) for function in vtable.virtual_functions]
+                vtable_item.children = [
+                    TreeItem(function, vtable_item)
+                    for function in vtable.virtual_functions
+                ]
                 class_item.appendChild(vtable_item)
             root.appendChild(class_item)
 
@@ -550,7 +603,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         class_name = indexes[0].internalPointer().item.class_name
         if not class_name:
             classes = [[x.item.name] for x in self.rootItem.children]
-            class_chooser = HexRaysPyTools.forms.MyChoose(classes, "Select Class", [["Name", 25]])
+            class_chooser = HexRaysPyTools.forms.MyChoose(
+                classes, "Select Class", [["Name", 25]]
+            )
             idx = class_chooser.Show(True)
             if idx != -1:
                 class_name = classes[idx][0]
@@ -592,7 +647,7 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         self.filter_by_function = False
 
     def set_regexp_filter(self, regexp):
-        if regexp and regexp[0] == '!':
+        if regexp and regexp[0] == "!":
             self.filter_by_function = True
             self.setFilterRegExp(regexp[1:])
         else:

@@ -18,7 +18,7 @@ touched_functions = set()
 
 # This is where all information about structure being reconstructed stored
 # TODO: Make some way to store several structures and switch between them. See issue #22 (3)
-temporary_structure = None      # type: temporary_structure.TemporaryStructureModel
+temporary_structure = None  # type: temporary_structure.TemporaryStructureModel
 
 
 def _init_imported_ea():

@@ -3,7 +3,11 @@ from . import actions
 import HexRaysPyTools.api as api
 import HexRaysPyTools.core.cache as cache
 import HexRaysPyTools.core.helper as helper
-from ..core.variable_scanner import NewShallowSearchVisitor, NewDeepSearchVisitor, DeepReturnVisitor
+from ..core.variable_scanner import (
+    NewShallowSearchVisitor,
+    NewDeepSearchVisitor,
+    DeepReturnVisitor,
+)
 from ..core.temporary_structure import TemporaryStructureModel
 
 
@@ -12,6 +16,7 @@ class Scanner(actions.HexRaysPopupAction):
     Abstract class containing common check of whether object can be scanned or not.
     Concrete class implement actual scan process in activate method
     """
+
     def __init__(self):
         super(Scanner, self).__init__()
 
@@ -38,7 +43,9 @@ class ShallowScanVariable(Scanner):
 
         if self._can_be_scanned(cfunc, hx_view.item):
             obj = api.ScanObject.create(cfunc, hx_view.item)
-            visitor = NewShallowSearchVisitor(cfunc, origin, obj, cache.temporary_structure)
+            visitor = NewShallowSearchVisitor(
+                cfunc, origin, obj, cache.temporary_structure
+            )
             visitor.process()
 
 
@@ -58,7 +65,9 @@ class DeepScanVariable(Scanner):
             obj = api.ScanObject.create(cfunc, hx_view.item)
             if helper.FunctionTouchVisitor(cfunc).process():
                 hx_view.refresh_view(True)
-            visitor = NewDeepSearchVisitor(hx_view.cfunc, origin, obj, cache.temporary_structure)
+            visitor = NewDeepSearchVisitor(
+                hx_view.cfunc, origin, obj, cache.temporary_structure
+            )
             visitor.process()
 
 
@@ -108,7 +117,9 @@ class DeepScanReturn(Scanner):
         func_ea = hx_view.cfunc.entry_ea
         obj = api.ReturnedObject(func_ea)
         origin = cache.temporary_structure.main_offset
-        visitor = DeepReturnVisitor(hx_view.cfunc, origin, obj, cache.temporary_structure)
+        visitor = DeepReturnVisitor(
+            hx_view.cfunc, origin, obj, cache.temporary_structure
+        )
         visitor.process()
 
 

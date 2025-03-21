@@ -10,10 +10,12 @@ class ActionManager(object):
     def register(self, action):
         self.__actions.append(action)
         idaapi.register_action(
-                idaapi.action_desc_t(action.name, action.description, action, action.hotkey)
-            )
+            idaapi.action_desc_t(action.name, action.description, action, action.hotkey)
+        )
         if isinstance(action, HexRaysPopupAction):
-            hx_callback_manager.register(idaapi.hxe_populating_popup, HexRaysPopupRequestHandler(action))
+            hx_callback_manager.register(
+                idaapi.hxe_populating_popup, HexRaysPopupRequestHandler(action)
+            )
 
     def initialize(self):
         pass
@@ -30,6 +32,7 @@ class Action(idaapi.action_handler_t):
     """
     Convenience wrapper with name property allowing to be registered in IDA using ActionManager
     """
+
     description = None
     hotkey = None
 
@@ -81,6 +84,7 @@ class HexRaysPopupRequestHandler(HexRaysEventHandler):
     menu or not.
     Register this in CallbackManager.
     """
+
     def __init__(self, action):
         super(HexRaysPopupRequestHandler, self).__init__()
         self.__action = action

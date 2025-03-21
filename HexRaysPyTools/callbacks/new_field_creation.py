@@ -61,7 +61,9 @@ class CreateNewField(actions.HexRaysPopupAction):
             default_field_type = "_QWORD" if const.EA64 else "_DWORD"
 
         declaration = idaapi.ask_text(
-            0x10000, "{0} field_{1:X}".format(default_field_type, offset + idx), "Enter new structure member:"
+            0x10000,
+            "{0} field_{1:X}".format(default_field_type, offset + idx),
+            "Enter new structure member:",
         )
         if declaration is None:
             return
@@ -84,14 +86,23 @@ class CreateNewField(actions.HexRaysPopupAction):
         gap_leftover = gap_size - idx - field_size
 
         if gap_leftover < 0:
-            logger.error("Too big size for the field. Type with maximum {0} bytes can be used".format(gap_size - idx))
+            logger.error(
+                "Too big size for the field. Type with maximum {0} bytes can be used".format(
+                    gap_size - idx
+                )
+            )
             return
 
         iterator = udt_data.find(udt_member)
         iterator = udt_data.erase(iterator)
 
         if gap_leftover > 0:
-            udt_data.insert(iterator, helper.create_padding_udt_member(offset + idx + field_size, gap_leftover))
+            udt_data.insert(
+                iterator,
+                helper.create_padding_udt_member(
+                    offset + idx + field_size, gap_leftover
+                ),
+            )
 
         udt_member = idaapi.udt_member_t()
         udt_member.offset = offset * 8 + idx
@@ -105,14 +116,18 @@ class CreateNewField(actions.HexRaysPopupAction):
             udt_data.insert(iterator, helper.create_padding_udt_member(offset, idx))
 
         struct_tinfo.create_udt(udt_data, idaapi.BTF_STRUCT)
-        struct_tinfo.set_numbered_type(idaapi.cvar.idati, ordinal, idaapi.BTF_STRUCT, struct_name)
+        struct_tinfo.set_numbered_type(
+            idaapi.cvar.idati, ordinal, idaapi.BTF_STRUCT, struct_name
+        )
         hx_view.refresh_view(True)
 
     @staticmethod
     def parse_declaration(declaration):
         m = re.search(r"^(\w+[ *]+)(\w+)(\[(\d+)\])?$", declaration)
         if m is None:
-            logger.error("Member declaration should be like `TYPE_NAME NAME[SIZE]` (Array is optional)")
+            logger.error(
+                "Member declaration should be like `TYPE_NAME NAME[SIZE]` (Array is optional)"
+            )
             return
 
         type_name, field_name, _, arr_size = m.groups()
@@ -122,7 +137,9 @@ class CreateNewField(actions.HexRaysPopupAction):
 
         result = idc.parse_decl(type_name, 0)
         if result is None:
-            logger.error("Failed to parse member type. It should be like `TYPE_NAME NAME[SIZE]` (Array is optional)")
+            logger.error(
+                "Failed to parse member type. It should be like `TYPE_NAME NAME[SIZE]` (Array is optional)"
+            )
             return
 
         _, tp, fld = result
@@ -131,6 +148,7 @@ class CreateNewField(actions.HexRaysPopupAction):
         if arr_size:
             assert tinfo.create_array(tinfo, int(arr_size))
         return tinfo, field_name
+
 
 actions.action_manager.register(CreateNewField())
 

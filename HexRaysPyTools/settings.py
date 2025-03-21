@@ -1,5 +1,6 @@
-import os
 import logging
+import os
+
 import idc
 
 try:
@@ -8,7 +9,7 @@ except ImportError:
     # for python 2
     import ConfigParser as configparser
 
-CONFIG_FILE_PATH = os.path.join(idc.idadir(), 'cfg', 'HexRaysPyTools.cfg')
+CONFIG_FILE_PATH = os.path.join(idc.idadir(), "cfg", "HexRaysPyTools.cfg")
 
 DEBUG_MESSAGE_LEVEL = logging.INFO
 # Whether propagate names (Propagate name feature) through all names or only defaults like v11, a3, this, field_4
@@ -24,16 +25,18 @@ SCAN_ANY_TYPE = False
 def add_default_settings(config):
     updated = False
     if not config.has_option("DEFAULT", "DEBUG_MESSAGE_LEVEL"):
-        config.set(None, 'DEBUG_MESSAGE_LEVEL', str(DEBUG_MESSAGE_LEVEL))
+        config.set(None, "DEBUG_MESSAGE_LEVEL", str(DEBUG_MESSAGE_LEVEL))
         updated = True
     if not config.has_option("DEFAULT", "PROPAGATE_THROUGH_ALL_NAMES"):
-        config.set(None, 'PROPAGATE_THROUGH_ALL_NAMES', str(PROPAGATE_THROUGH_ALL_NAMES))
+        config.set(
+            None, "PROPAGATE_THROUGH_ALL_NAMES", str(PROPAGATE_THROUGH_ALL_NAMES)
+        )
         updated = True
     if not config.has_option("DEFAULT", "STORE_XREFS"):
-        config.set(None, 'STORE_XREFS', str(STORE_XREFS))
+        config.set(None, "STORE_XREFS", str(STORE_XREFS))
         updated = True
     if not config.has_option("DEFAULT", "SCAN_ANY_TYPE"):
-        config.set(None, 'SCAN_ANY_TYPE', str(SCAN_ANY_TYPE))
+        config.set(None, "SCAN_ANY_TYPE", str(SCAN_ANY_TYPE))
         updated = True
 
     if updated:
@@ -41,8 +44,12 @@ def add_default_settings(config):
             with open(CONFIG_FILE_PATH, "w") as f:
                 config.write(f)
         except IOError:
-            print("[ERROR] Failed to write or update config file at {}. Default settings will be used instead.\n" \
-                  "Consider running IDA Pro under administrator once".format(CONFIG_FILE_PATH))
+            print(
+                "[ERROR] Failed to write or update config file at {}. Default settings will be used instead.\n"
+                "Consider running IDA Pro under administrator once".format(
+                    CONFIG_FILE_PATH
+                )
+            )
 
 
 def load_settings():
@@ -54,7 +61,9 @@ def load_settings():
 
     add_default_settings(config)
 
-    DEBUG_MESSAGE_LEVEL = config.getint("DEFAULT", 'DEBUG_MESSAGE_LEVEL')
-    PROPAGATE_THROUGH_ALL_NAMES = config.getboolean("DEFAULT", 'PROPAGATE_THROUGH_ALL_NAMES')
-    STORE_XREFS = config.getboolean("DEFAULT", 'STORE_XREFS')
-    SCAN_ANY_TYPE = config.getboolean("DEFAULT", 'SCAN_ANY_TYPE')
+    DEBUG_MESSAGE_LEVEL = config.getint("DEFAULT", "DEBUG_MESSAGE_LEVEL")
+    PROPAGATE_THROUGH_ALL_NAMES = config.getboolean(
+        "DEFAULT", "PROPAGATE_THROUGH_ALL_NAMES"
+    )
+    STORE_XREFS = config.getboolean("DEFAULT", "STORE_XREFS")
+    SCAN_ANY_TYPE = config.getboolean("DEFAULT", "SCAN_ANY_TYPE")

@@ -8,7 +8,7 @@ import HexRaysPyTools.settings as settings
 
 logger = logging.getLogger(__name__)
 
-XrefInfo = namedtuple('XrefInfo', ['func_ea', 'offset', 'line', 'type'])
+XrefInfo = namedtuple("XrefInfo", ["func_ea", "offset", "line", "type"])
 
 
 def singleton(cls):
@@ -18,6 +18,7 @@ def singleton(cls):
         if cls not in instances:
             instances[cls] = cls()
         return instances[cls]
+
     return get_instance
 
 
@@ -45,7 +46,9 @@ class XrefStorage(object):
                 self.__init_delete_helper()
                 return
             except ValueError:
-                logger.error("Failed to read previous info about Xrefs. Try Ctrl+F5 to cache data")
+                logger.error(
+                    "Failed to read previous info about Xrefs. Try Ctrl+F5 to cache data"
+                )
         self.storage = {}
 
     def close(self):
@@ -61,16 +64,18 @@ class XrefStorage(object):
             helper.save_long_str_to_idb(self.ARRAY_NAME, json.dumps(self.storage))
 
     def update(self, function_offset, data):
-        """ data - {ordinal : (code_offset, line, usage_type)} """
+        """data - {ordinal : (code_offset, line, usage_type)}"""
         for ordinal, info in list(data.items()):
             self.__update_ordinal_info(ordinal, function_offset, info)
 
-        deleted_ordinals = self.__delete_items_helper[function_offset].difference(list(data.keys()))
+        deleted_ordinals = self.__delete_items_helper[function_offset].difference(
+            list(data.keys())
+        )
         for ordinal in deleted_ordinals:
             self.__remove_ordinal_info(ordinal, function_offset)
 
     def get_structure_info(self, ordinal, struct_offset):
-        """ By given ordinal and offset within a structure returns dictionary {func_address -> list(offsets)} """
+        """By given ordinal and offset within a structure returns dictionary {func_address -> list(offsets)}"""
         result = []
 
         if ordinal not in self.storage:

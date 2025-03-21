@@ -34,9 +34,11 @@ class StructXrefCollectorVisitor(idaapi.ctree_parentee_t):
         usage_type = self.__get_type(expression)
 
         if ea == idaapi.BADADDR or not ordinal:
-            logger.warning("Failed to parse at address {0}, ordinal - {1}, type - {2}".format(
-                helper.to_hex(ea), ordinal, struct_type.dstr()
-            ))
+            logger.warning(
+                "Failed to parse at address {0}, ordinal - {1}, type - {2}".format(
+                    helper.to_hex(ea), ordinal, struct_type.dstr()
+                )
+            )
 
         one_line = self.__get_line()
 
@@ -55,13 +57,19 @@ class StructXrefCollectorVisitor(idaapi.ctree_parentee_t):
     def process(self):
         t = time.time()
         self.apply_to(self.__cfunc.body, None)
-        self.__storage.update(self.__function_address - idaapi.get_imagebase(), self.__result)
+        self.__storage.update(
+            self.__function_address - idaapi.get_imagebase(), self.__result
+        )
 
-        storage_mb_size = len(self.__storage) * 1.0 // 1024 ** 2
-        logger.debug("Xref processing: %f seconds passed, storage size - %.2f MB ", (time.time() - t), storage_mb_size)
+        storage_mb_size = len(self.__storage) * 1.0 // 1024**2
+        logger.debug(
+            "Xref processing: %f seconds passed, storage size - %.2f MB ",
+            (time.time() - t),
+            storage_mb_size,
+        )
 
     def __find_ref_address(self, cexpr):
-        """ Returns most close virtual address corresponding to cexpr """
+        """Returns most close virtual address corresponding to cexpr"""
 
         ea = cexpr.ea
         if ea != idaapi.BADADDR:
@@ -72,19 +80,19 @@ class StructXrefCollectorVisitor(idaapi.ctree_parentee_t):
                 return p.ea
 
     def __get_type(self, cexpr):
-        """ Returns one of the following types: 'R' - read value, 'W' - write value, 'A' - function argument"""
+        """Returns one of the following types: 'R' - read value, 'W' - write value, 'A' - function argument"""
         child = cexpr
         for p in reversed(self.parents):
             assert p, "Failed to get type at " + helper.to_hex(self.__function_address)
 
             if p.cexpr.op == idaapi.cot_call:
-                return 'Arg'
+                return "Arg"
             if not p.is_expr():
-                return 'R'
+                return "R"
             if p.cexpr.op == idaapi.cot_asg:
                 if p.cexpr.x == child:
-                    return 'W'
-                return 'R'
+                    return "W"
+                return "R"
             child = p.cexpr
 
     def __get_line(self):

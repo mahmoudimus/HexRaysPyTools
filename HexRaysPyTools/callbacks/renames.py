@@ -15,19 +15,21 @@ logger = logging.getLogger(__name__)
 
 def _should_be_renamed(old_name, new_name):
     # type: (str, str) -> bool
-    """ Checks if there's a point to rename a variable or argument """
+    """Checks if there's a point to rename a variable or argument"""
 
     # There's no point to rename into default name
     if _is_default_name(new_name):
         return False
 
     # Strip prefixes and check if names are the same
-    return old_name.lstrip('_') != new_name.lstrip('_')
+    return old_name.lstrip("_") != new_name.lstrip("_")
 
 
 def _is_default_name(string):
-    return re.match(r"[av]\d+$", string) is not None or \
-           re.match(r"[qd]?word|field_|off_", string) is not None
+    return (
+        re.match(r"[av]\d+$", string) is not None
+        or re.match(r"[qd]?word|field_|off_", string) is not None
+    )
 
 
 class RenameOther(actions.HexRaysPopupAction):
@@ -47,7 +49,7 @@ class RenameOther(actions.HexRaysPopupAction):
         if result:
             lvar, name = result
             while not hx_view.rename_lvar(lvar, name, True):
-                name = '_' + name
+                name = "_" + name
 
     @staticmethod
     def __extract_rename_info(cfunc, ctree_item):
@@ -72,7 +74,7 @@ class RenameOther(actions.HexRaysPopupAction):
         other_lvar = cfunc.get_lvars()[other.v.idx]
 
         if _should_be_renamed(this_lvar.name, other_lvar.name):
-            return this_lvar, other_lvar.name.lstrip('_')
+            return this_lvar, other_lvar.name.lstrip("_")
 
 
 class RenameInside(actions.HexRaysPopupAction):
@@ -115,7 +117,7 @@ class RenameInside(actions.HexRaysPopupAction):
         func_tinfo = parent.x.type.get_pointed_object()
         arg_name = helper.get_func_arg_name(func_tinfo, arg_index)
         if _should_be_renamed(arg_name, lvar.name):
-            return func_tinfo, parent.x.obj_ea, arg_index, lvar.name.lstrip('_')
+            return func_tinfo, parent.x.obj_ea, arg_index, lvar.name.lstrip("_")
 
 
 class RenameOutside(actions.HexRaysPopupAction):
@@ -135,7 +137,7 @@ class RenameOutside(actions.HexRaysPopupAction):
         if result:
             lvar, name = result
             while not hx_view.rename_lvar(lvar, name, True):
-                name = '_' + name
+                name = "_" + name
 
     @staticmethod
     def __extract_rename_info(cfunc, ctree_item):
@@ -170,11 +172,17 @@ class _RenameUsingAssertVisitor(idaapi.ctree_parentee_t):
         self.__possible_names = set()
 
     def visit_expr(self, expr):
-        if expr.op == idaapi.cot_call and expr.x.op == idaapi.cot_obj and expr.x.obj_ea == self.__func_addr:
+        if (
+            expr.op == idaapi.cot_call
+            and expr.x.op == idaapi.cot_obj
+            and expr.x.obj_ea == self.__func_addr
+        ):
             arg_expr = expr.a[self.__arg_idx]
             if arg_expr.op != idaapi.cot_obj:
                 cexpr_ea = helper.find_asm_address(expr, self.parents)
-                logger.error("Argument is a not string at {}".format(helper.to_hex(cexpr_ea)))
+                logger.error(
+                    "Argument is a not string at {}".format(helper.to_hex(cexpr_ea))
+                )
                 return 1
             self.__add_func_name(arg_expr)
         return 0
@@ -184,20 +192,32 @@ class _RenameUsingAssertVisitor(idaapi.ctree_parentee_t):
         if len(self.__possible_names) == 1:
             # Only one potential name was found, rename function using it
             new_name = self.__possible_names.pop()
-            logging.info("Renaming function at {} to `{}`".format(helper.to_hex(self.__cfunc.entry_ea), new_name))
+            logging.info(
+                "Renaming function at {} to `{}`".format(
+                    helper.to_hex(self.__cfunc.entry_ea), new_name
+                )
+            )
             idc.set_name(self.__cfunc.entry_ea, new_name)
         elif len(self.__possible_names) > 1:
-            logger.error("Function at {} has more than one candidate for renaming: {}".format(
-                helper.to_hex(self.__cfunc.entry_ea), ", ".join(self.__possible_names)))
+            logger.error(
+                "Function at {} has more than one candidate for renaming: {}".format(
+                    helper.to_hex(self.__cfunc.entry_ea),
+                    ", ".join(self.__possible_names),
+                )
+            )
 
     def __add_func_name(self, arg_expr):
         new_name = idc.get_strlit_contents(arg_expr.obj_ea)
         if type(new_name) is not str:
             # convert bytes to str (python 3)
-            new_name = new_name.decode('ascii')
+            new_name = new_name.decode("ascii")
         if not idaapi.is_valid_typename(new_name):
-            logger.warn("Argument has a weird name `{}` at {}".format(
-                new_name, helper.to_hex(helper.find_asm_address(arg_expr, self.parents))))
+            logger.warn(
+                "Argument has a weird name `{}` at {}".format(
+                    new_name,
+                    helper.to_hex(helper.find_asm_address(arg_expr, self.parents)),
+                )
+            )
             return
 
         self.__possible_names.add(new_name)
@@ -234,7 +254,7 @@ class RenameUsingAssert(actions.HexRaysPopupAction):
             str_potential_name = idc.get_strlit_contents(obj_ea)
             if type(str_potential_name) is not str:
                 # convert bytes to str (python 3)
-                str_potential_name = str_potential_name.decode('ascii')
+                str_potential_name = str_potential_name.decode("ascii")
             return idaapi.is_valid_typename(str_potential_name)
         return False
 
@@ -264,53 +284,65 @@ class RenameUsingAssert(actions.HexRaysPopupAction):
 
 
 class _NamePropagator(api.RecursiveObjectDownwardsVisitor):
-        def __init__(self, hx_view, cfunc, obj):
-            super(_NamePropagator, self).__init__(cfunc, obj, skip_until_object=True)
-            self.__hx_view = hx_view
-            self.__propagated_name = obj.name
+    def __init__(self, hx_view, cfunc, obj):
+        super(_NamePropagator, self).__init__(cfunc, obj, skip_until_object=True)
+        self.__hx_view = hx_view
+        self.__propagated_name = obj.name
 
-        def _start_iteration(self):
-            self.__hx_view.switch_to(self._cfunc, False)
+    def _start_iteration(self):
+        self.__hx_view.switch_to(self._cfunc, False)
 
-        def _manipulate(self, cexpr, obj):
-            if self.crippled:
-                logger.debug("Skipping crippled function at {}".format(helper.to_hex(self._cfunc.entry_ea)))
-                return
+    def _manipulate(self, cexpr, obj):
+        if self.crippled:
+            logger.debug(
+                "Skipping crippled function at {}".format(
+                    helper.to_hex(self._cfunc.entry_ea)
+                )
+            )
+            return
 
-            if obj.id == api.SO_GLOBAL_OBJECT:
-                old_name = idaapi.get_short_name(cexpr.obj_ea)
-                if settings.PROPAGATE_THROUGH_ALL_NAMES or _is_default_name(old_name):
-                    new_name = self.__rename_with_prefix(
-                        lambda x: idaapi.set_name(cexpr.obj_ea, x),
-                        self.__propagated_name)
-                    logger.debug("Renamed global variable from {} to {}".format(old_name, new_name))
-            elif obj.id == api.SO_LOCAL_VARIABLE:
-                lvar = self._cfunc.get_lvars()[cexpr.v.idx]
-                old_name = lvar.name
-                if settings.PROPAGATE_THROUGH_ALL_NAMES or _is_default_name(old_name):
-                    new_name = self.__rename_with_prefix(
-                        lambda x: self.__hx_view.rename_lvar(lvar, x, True),
-                        self.__propagated_name)
-                    logger.debug("Renamed local variable from {} to {}".format(old_name, new_name))
-            elif obj.id in (api.SO_STRUCT_POINTER, api.SO_STRUCT_REFERENCE):
-                struct_tinfo = cexpr.x.type
-                offset = cexpr.m
-                struct_tinfo.remove_ptr_or_array()
-                old_name = helper.get_member_name(struct_tinfo, offset)
-                if settings.PROPAGATE_THROUGH_ALL_NAMES or _is_default_name(old_name):
-                    new_name = self.__rename_with_prefix(
-                        lambda x: helper.change_member_name(struct_tinfo.dstr(), offset, x),
-                        self.__propagated_name)
-                    logger.debug("Renamed struct member from {} to {}".format(old_name, new_name))
+        if obj.id == api.SO_GLOBAL_OBJECT:
+            old_name = idaapi.get_short_name(cexpr.obj_ea)
+            if settings.PROPAGATE_THROUGH_ALL_NAMES or _is_default_name(old_name):
+                new_name = self.__rename_with_prefix(
+                    lambda x: idaapi.set_name(cexpr.obj_ea, x), self.__propagated_name
+                )
+                logger.debug(
+                    "Renamed global variable from {} to {}".format(old_name, new_name)
+                )
+        elif obj.id == api.SO_LOCAL_VARIABLE:
+            lvar = self._cfunc.get_lvars()[cexpr.v.idx]
+            old_name = lvar.name
+            if settings.PROPAGATE_THROUGH_ALL_NAMES or _is_default_name(old_name):
+                new_name = self.__rename_with_prefix(
+                    lambda x: self.__hx_view.rename_lvar(lvar, x, True),
+                    self.__propagated_name,
+                )
+                logger.debug(
+                    "Renamed local variable from {} to {}".format(old_name, new_name)
+                )
+        elif obj.id in (api.SO_STRUCT_POINTER, api.SO_STRUCT_REFERENCE):
+            struct_tinfo = cexpr.x.type
+            offset = cexpr.m
+            struct_tinfo.remove_ptr_or_array()
+            old_name = helper.get_member_name(struct_tinfo, offset)
+            if settings.PROPAGATE_THROUGH_ALL_NAMES or _is_default_name(old_name):
+                new_name = self.__rename_with_prefix(
+                    lambda x: helper.change_member_name(struct_tinfo.dstr(), offset, x),
+                    self.__propagated_name,
+                )
+                logger.debug(
+                    "Renamed struct member from {} to {}".format(old_name, new_name)
+                )
 
-        def _finish(self):
-            self.__hx_view.switch_to(self._cfunc, True)
+    def _finish(self):
+        self.__hx_view.switch_to(self._cfunc, True)
 
-        @staticmethod
-        def __rename_with_prefix(rename_func, name):
-            while not rename_func(name):
-                name = "_" + name
-            return name
+    @staticmethod
+    def __rename_with_prefix(rename_func, name):
+        while not rename_func(name):
+            name = "_" + name
+        return name
 
 
 class PropagateName(actions.HexRaysPopupAction):

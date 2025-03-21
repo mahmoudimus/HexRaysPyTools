@@ -22,7 +22,12 @@ class ConvertToUsercall(actions.HexRaysPopupAction):
         convention = idaapi.CM_CC_MASK & function_details.cc
         if convention == idaapi.CM_CC_CDECL:
             function_details.cc = idaapi.CM_CC_SPECIAL
-        elif convention in (idaapi.CM_CC_STDCALL, idaapi.CM_CC_FASTCALL, idaapi.CM_CC_PASCAL, idaapi.CM_CC_THISCALL):
+        elif convention in (
+            idaapi.CM_CC_STDCALL,
+            idaapi.CM_CC_FASTCALL,
+            idaapi.CM_CC_PASCAL,
+            idaapi.CM_CC_THISCALL,
+        ):
             function_details.cc = idaapi.CM_CC_SPECIALP
         elif convention == idaapi.CM_CC_ELLIPSIS:
             function_details.cc = idaapi.CM_CC_SPECIALE
@@ -67,7 +72,7 @@ class RemoveArgument(actions.HexRaysPopupAction):
     def check(self, hx_view):
         if hx_view.item.citype != idaapi.VDI_LVAR:
             return False
-        local_variable = hx_view.item.get_lvar()          # type:idaapi.lvar_t
+        local_variable = hx_view.item.get_lvar()  # type:idaapi.lvar_t
         return local_variable.is_arg_var
 
     def activate(self, ctx):
@@ -79,7 +84,9 @@ class RemoveArgument(actions.HexRaysPopupAction):
         function_tinfo.get_func_details(function_details)
         del_arg = vu.item.get_lvar()
 
-        function_details.erase([x for x in function_details if x.name == del_arg.name][0])
+        function_details.erase(
+            [x for x in function_details if x.name == del_arg.name][0]
+        )
 
         function_tinfo.create_func(function_details)
         idaapi.apply_tinfo(vu.cfunc.entry_ea, function_tinfo, idaapi.TINFO_DEFINITE)

@@ -9,8 +9,10 @@ import HexRaysPyTools.core.helper as helper
 class _StructAllocChoose(forms.MyChoose):
     def __init__(self, items):
         forms.MyChoose.__init__(
-            self, items, "Possible structure allocations",
-            [["Function", 30], ["Variable", 10], ["Line", 50], ["Type", 10]]
+            self,
+            items,
+            "Possible structure allocations",
+            [["Function", 30], ["Variable", 10], ["Line", 50], ["Type", 10]],
         )
 
     def OnSelectLine(self, n):
@@ -23,20 +25,40 @@ class _StructAllocChoose(forms.MyChoose):
 
 class _GuessAllocationVisitor(api.RecursiveObjectUpwardsVisitor):
     def __init__(self, cfunc, obj):
-        super(_GuessAllocationVisitor, self).__init__(cfunc, obj, skip_after_object=True)
+        super(_GuessAllocationVisitor, self).__init__(
+            cfunc, obj, skip_after_object=True
+        )
         self._data = []
 
     def _manipulate(self, cexpr, obj):
         if obj.id == api.SO_LOCAL_VARIABLE:
             parent = self.parent_expr()
             if parent.op == idaapi.cot_asg:
-                alloc_obj = api.MemoryAllocationObject.create(self._cfunc, self.parent_expr().y)
+                alloc_obj = api.MemoryAllocationObject.create(
+                    self._cfunc, self.parent_expr().y
+                )
                 if alloc_obj:
-                    self._data.append([alloc_obj.ea, obj.name, self._get_line(), "HEAP"])
+                    self._data.append(
+                        [alloc_obj.ea, obj.name, self._get_line(), "HEAP"]
+                    )
             elif self.parent_expr().op == idaapi.cot_ref:
-                self._data.append([helper.find_asm_address(cexpr, self.parents), obj.name, self._get_line(), "STACK"])
+                self._data.append(
+                    [
+                        helper.find_asm_address(cexpr, self.parents),
+                        obj.name,
+                        self._get_line(),
+                        "STACK",
+                    ]
+                )
         elif obj.id == api.SO_GLOBAL_OBJECT:
-            self._data.append([helper.find_asm_address(cexpr, self.parents), obj.name, self._get_line(), "GLOBAL"])
+            self._data.append(
+                [
+                    helper.find_asm_address(cexpr, self.parents),
+                    obj.name,
+                    self._get_line(),
+                    "GLOBAL",
+                ]
+            )
 
     def _finish(self):
         chooser = _StructAllocChoose(self._data)
@@ -61,5 +83,6 @@ class GuessAllocation(actions.HexRaysPopupAction):
         if obj:
             visitor = _GuessAllocationVisitor(hx_view.cfunc, obj)
             visitor.process()
+
 
 actions.action_manager.register(GuessAllocation())

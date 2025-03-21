@@ -11,7 +11,10 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
     def handle(self, event, *args):
         hx_view = args[0]
         item = hx_view.item
-        if item.citype == idaapi.VDI_EXPR and item.e.op in (idaapi.cot_memptr, idaapi.cot_memref):
+        if item.citype == idaapi.VDI_EXPR and item.e.op in (
+            idaapi.cot_memptr,
+            idaapi.cot_memref,
+        ):
             # Look if we double clicked on expression that is member pointer. Then get tinfo_t of  the structure.
             # After that remove pointer and get member name with the same offset
             if item.e.x.op == idaapi.cot_memref and item.e.x.x.op == idaapi.cot_memptr:
@@ -29,15 +32,20 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
             else:
                 func_offset = item.e.m
                 struct_tinfo = item.e.x.type.get_pointed_object()
-                func_ea = helper.choose_virtual_func_address(helper.get_member_name(struct_tinfo, func_offset))
+                func_ea = helper.choose_virtual_func_address(
+                    helper.get_member_name(struct_tinfo, func_offset)
+                )
                 if func_ea:
                     idaapi.jumpto(func_ea)
                 return 0
 
             func_name = helper.get_member_name(vtable_tinfo, method_offset)
-            func_ea = helper.choose_virtual_func_address(func_name, class_tinfo, vtable_offset)
+            func_ea = helper.choose_virtual_func_address(
+                func_name, class_tinfo, vtable_offset
+            )
             if func_ea:
                 idaapi.open_pseudocode(func_ea, 0)
                 return 1
+
 
 callbacks.hx_callback_manager.register(idaapi.hxe_double_click, MemberDoubleClick())

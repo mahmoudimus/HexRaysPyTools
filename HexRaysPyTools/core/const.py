@@ -3,8 +3,17 @@ import idaapi
 EA64 = None
 EA_SIZE = None
 
-COT_ARITHMETIC = (idaapi.cot_num, idaapi.cot_fnum, idaapi.cot_add, idaapi.cot_fadd, idaapi.cot_sub, idaapi.cot_fsub,
-                  idaapi.cot_mul, idaapi.cot_fmul, idaapi.cot_fdiv)
+COT_ARITHMETIC = (
+    idaapi.cot_num,
+    idaapi.cot_fnum,
+    idaapi.cot_add,
+    idaapi.cot_fadd,
+    idaapi.cot_sub,
+    idaapi.cot_fsub,
+    idaapi.cot_mul,
+    idaapi.cot_fmul,
+    idaapi.cot_fdiv,
+)
 
 VOID_TINFO = None
 PVOID_TINFO = idaapi.tinfo_t()
@@ -19,7 +28,7 @@ PBYTE_TINFO = None
 WORD_TINFO = None
 PWORD_TINFO = idaapi.tinfo_t()
 
-X_WORD_TINFO = None                 # DWORD for x32 and QWORD for x64
+X_WORD_TINFO = None  # DWORD for x32 and QWORD for x64
 PX_WORD_TINFO = None
 
 DUMMY_FUNC = None
@@ -28,10 +37,8 @@ LEGAL_TYPES = []
 
 
 def init():
-    """ All tinfo should be reinitialized between session. Otherwise they could have wrong type """
-    global VOID_TINFO, PVOID_TINFO, CONST_PVOID_TINFO, BYTE_TINFO, PBYTE_TINFO, LEGAL_TYPES, X_WORD_TINFO, \
-        PX_WORD_TINFO, DUMMY_FUNC, CONST_PCHAR_TINFO, CHAR_TINFO, PCHAR_TINFO, CONST_VOID_TINFO, \
-        WORD_TINFO, PWORD_TINFO, EA64, EA_SIZE
+    """All tinfo should be reinitialized between session. Otherwise they could have wrong type"""
+    global VOID_TINFO, PVOID_TINFO, CONST_PVOID_TINFO, BYTE_TINFO, PBYTE_TINFO, LEGAL_TYPES, X_WORD_TINFO, PX_WORD_TINFO, DUMMY_FUNC, CONST_PCHAR_TINFO, CHAR_TINFO, PCHAR_TINFO, CONST_VOID_TINFO, WORD_TINFO, PWORD_TINFO, EA64, EA_SIZE
 
     EA64 = idaapi.get_inf_structure().is_64bit()
     EA_SIZE = 8 if EA64 else 4

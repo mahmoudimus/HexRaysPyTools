@@ -35,33 +35,42 @@ class ScannedObject(object):
         return idaapi.get_short_name(self.func_ea)
 
     def apply_type(self, tinfo):
-        """ Finally apply Class'es tinfo to this variable """
+        """Finally apply Class'es tinfo to this variable"""
         raise NotImplementedError
 
     @staticmethod
     def create(obj, expression_address, origin, applicable):
-        """ Creates suitable instance of ScannedObject depending on obj """
+        """Creates suitable instance of ScannedObject depending on obj"""
         if obj.id == api.SO_GLOBAL_OBJECT:
-            return ScannedGlobalObject(obj.ea, obj.name, expression_address, origin, applicable)
+            return ScannedGlobalObject(
+                obj.ea, obj.name, expression_address, origin, applicable
+            )
         elif obj.id == api.SO_LOCAL_VARIABLE:
-            return ScannedVariableObject(obj.lvar, obj.name, expression_address, origin, applicable)
+            return ScannedVariableObject(
+                obj.lvar, obj.name, expression_address, origin, applicable
+            )
         elif obj.id in (api.SO_STRUCT_REFERENCE, api.SO_STRUCT_POINTER):
-            return ScannedStructureMemberObject(obj.struct_name, obj.offset, expression_address, origin, applicable)
+            return ScannedStructureMemberObject(
+                obj.struct_name, obj.offset, expression_address, origin, applicable
+            )
         else:
             raise AssertionError
 
     def to_list(self):
-        """ Creates list that is acceptable to MyChoose2 viewer """
+        """Creates list that is acceptable to MyChoose2 viewer"""
         return [
             "0x{0:04X}".format(self.origin),
             self.function_name,
             self.name,
-            helper.to_hex(self.expression_address)
+            helper.to_hex(self.expression_address),
         ]
 
     def __eq__(self, other):
-        return self.func_ea == other.func_ea and self.name == other.name and \
-               self.expression_address == other.expression_address
+        return (
+            self.func_ea == other.func_ea
+            and self.name == other.name
+            and self.expression_address == other.expression_address
+        )
 
     def __hash__(self):
         return hash((self.func_ea, self.name, self.expression_address))
@@ -72,7 +81,9 @@ class ScannedObject(object):
 
 class ScannedGlobalObject(ScannedObject):
     def __init__(self, obj_ea, name, expression_address, origin, applicable=True):
-        super(ScannedGlobalObject, self).__init__(name, expression_address, origin, applicable)
+        super(ScannedGlobalObject, self).__init__(
+            name, expression_address, origin, applicable
+        )
         self.__obj_ea = obj_ea
 
     def apply_type(self, tinfo):
@@ -82,7 +93,9 @@ class ScannedGlobalObject(ScannedObject):
 
 class ScannedVariableObject(ScannedObject):
     def __init__(self, lvar, name, expression_address, origin, applicable=True):
-        super(ScannedVariableObject, self).__init__(name, expression_address, origin, applicable)
+        super(ScannedVariableObject, self).__init__(
+            name, expression_address, origin, applicable
+        )
         self.__lvar = idaapi.lvar_locator_t(lvar.location, lvar.defea)
 
     def apply_type(self, tinfo):
@@ -91,27 +104,47 @@ class ScannedVariableObject(ScannedObject):
 
         hx_view = idaapi.open_pseudocode(self.func_ea, -1)
         if hx_view:
-            logger.debug("Applying tinfo to variable {0} in function {1}".format(self.name, self.function_name))
+            logger.debug(
+                "Applying tinfo to variable {0} in function {1}".format(
+                    self.name, self.function_name
+                )
+            )
             # Finding lvar of new window that have the same name that saved one and applying tinfo_t
             lvar = [x for x in hx_view.cfunc.get_lvars() if x == self.__lvar]
             if lvar:
                 logger.debug("Successful")
                 hx_view.set_lvar_type(lvar[0], tinfo)
             else:
-                logger.warn("Failed to find previously scanned local variable {} from {}".format(
-                    self.name, helper.to_hex(self.expression_address)))
+                logger.warn(
+                    "Failed to find previously scanned local variable {} from {}".format(
+                        self.name, helper.to_hex(self.expression_address)
+                    )
+                )
 
 
 class ScannedStructureMemberObject(ScannedObject):
-    def __init__(self, struct_name, struct_offset, name, expression_address, origin, applicable=True):
-        super(ScannedStructureMemberObject, self).__init__(name, expression_address, origin, applicable)
+    def __init__(
+        self,
+        struct_name,
+        struct_offset,
+        name,
+        expression_address,
+        origin,
+        applicable=True,
+    ):
+        super(ScannedStructureMemberObject, self).__init__(
+            name, expression_address, origin, applicable
+        )
         self.__struct_name = struct_name
         self.__struct_offset = struct_offset
 
     def apply_type(self, tinfo):
         if self._applicable:
-            logger.warn("Changing type of structure field is not yet implemented. Address - {}".format(
-                helper.to_hex(self.expression_address)))
+            logger.warn(
+                "Changing type of structure field is not yet implemented. Address - {}".format(
+                    helper.to_hex(self.expression_address)
+                )
+            )
 
 
 class SearchVisitor(api.ObjectVisitor):
@@ -125,29 +158,39 @@ class SearchVisitor(api.ObjectVisitor):
 
         if obj.tinfo and not helper.is_legal_type(obj.tinfo):
             cexpr_ea = helper.find_asm_address(cexpr, self.parents)
-            logger.warn("Variable obj.name has weird type at {}".format(helper.to_hex(cexpr_ea)))
+            logger.warn(
+                "Variable obj.name has weird type at {}".format(helper.to_hex(cexpr_ea))
+            )
             return
         if cexpr.type.is_ptr():
             member = self.__extract_member_from_pointer(cexpr, obj)
         else:
             member = self.__extract_member_from_xword(cexpr, obj)
         if member:
-            logger.debug("\tCreating member with type {}, {}, offset - {}".format(
-                member.type_name, member.scanned_variables, member.offset))
+            logger.debug(
+                "\tCreating member with type {}, {}, offset - {}".format(
+                    member.type_name, member.scanned_variables, member.offset
+                )
+            )
             self.__temporary_structure.add_row(member)
 
     def _get_member(self, offset, cexpr, obj, tinfo=None, obj_ea=None):
         cexpr_ea = helper.find_asm_address(cexpr, self.parents)
         if offset < 0:
-            logger.error("Considered to be impossible: offset - {}, obj - {}".format(
-                offset, helper.to_hex(cexpr_ea)))
+            logger.error(
+                "Considered to be impossible: offset - {}, obj - {}".format(
+                    offset, helper.to_hex(cexpr_ea)
+                )
+            )
             raise AssertionError
 
         applicable = not self.crippled
         scan_obj = ScannedObject.create(obj, cexpr_ea, self.__origin, applicable)
         if obj_ea:
             if temporary_structure.VirtualTable.check_address(obj_ea):
-                return temporary_structure.VirtualTable(offset, obj_ea, scan_obj, self.__origin)
+                return temporary_structure.VirtualTable(
+                    offset, obj_ea, scan_obj, self.__origin
+                )
             if helper.is_code_ea(obj_ea):
                 cfunc = helper.decompile_function(obj_ea)
                 if cfunc:
@@ -155,10 +198,16 @@ class SearchVisitor(api.ObjectVisitor):
                     tinfo.create_ptr(tinfo)
                 else:
                     tinfo = const.DUMMY_FUNC
-                return temporary_structure.Member(offset, tinfo, scan_obj, self.__origin)
+                return temporary_structure.Member(
+                    offset, tinfo, scan_obj, self.__origin
+                )
             # logger.warn("Want to see this ea - {},".format(Helper.to_hex(cexpr_ea)))
 
-        if not tinfo or tinfo.equals_to(const.VOID_TINFO) or tinfo.equals_to(const.CONST_VOID_TINFO):
+        if (
+            not tinfo
+            or tinfo.equals_to(const.VOID_TINFO)
+            or tinfo.equals_to(const.CONST_VOID_TINFO)
+        ):
             return temporary_structure.VoidMember(offset, scan_obj, self.__origin)
 
         if tinfo.equals_to(const.CONST_PCHAR_TINFO):
@@ -180,23 +229,27 @@ class SearchVisitor(api.ObjectVisitor):
         pass
 
     def __extract_member_from_pointer(self, cexpr, obj):
-        parents_type = [idaapi.get_ctype_name(x.cexpr.op) for x in list(self.parents)[:0:-1]]
+        parents_type = [
+            idaapi.get_ctype_name(x.cexpr.op) for x in list(self.parents)[:0:-1]
+        ]
         parents = [x.cexpr for x in list(self.parents)[:0:-1]]
 
-        logger.debug("Parsing expression {}. Parents - {}".format(obj.name, parents_type))
+        logger.debug(
+            "Parsing expression {}. Parents - {}".format(obj.name, parents_type)
+        )
 
         # Extracting offset and removing expression parents making this offset
-        if parents_type[0] in ('idx', 'add'):
+        if parents_type[0] in ("idx", "add"):
             # `obj[idx]' or `(TYPE *) + x'
             if parents[0].y.op != idaapi.cot_num:
                 # There's no way to handle with dynamic offset
                 return
             offset = parents[0].y.numval() * cexpr.type.get_ptrarr_objsize()
             cexpr = self.parent_expr()
-            if parents_type[0] == 'add':
+            if parents_type[0] == "add":
                 del parents_type[0]
                 del parents[0]
-        elif parents_type[0:2] == ['cast', 'add']:
+        elif parents_type[0:2] == ["cast", "add"]:
             # (TYPE *)obj + offset or (TYPE)obj + offset
             if parents[1].y.op != idaapi.cot_num:
                 return
@@ -214,12 +267,16 @@ class SearchVisitor(api.ObjectVisitor):
         return self.__extract_member(cexpr, obj, offset, parents, parents_type)
 
     def __extract_member_from_xword(self, cexpr, obj):
-        parents_type = [idaapi.get_ctype_name(x.cexpr.op) for x in list(self.parents)[:0:-1]]
+        parents_type = [
+            idaapi.get_ctype_name(x.cexpr.op) for x in list(self.parents)[:0:-1]
+        ]
         parents = [x.cexpr for x in list(self.parents)[:0:-1]]
 
-        logger.debug("Parsing expression {}. Parents - {}".format(obj.name, parents_type))
+        logger.debug(
+            "Parsing expression {}. Parents - {}".format(obj.name, parents_type)
+        )
 
-        if parents_type[0] == 'add':
+        if parents_type[0] == "add":
             if parents[0].theother(cexpr).op != idaapi.cot_num:
                 return
             offset = parents[0].theother(cexpr).numval()
@@ -232,7 +289,7 @@ class SearchVisitor(api.ObjectVisitor):
         return self.__extract_member(cexpr, obj, offset, parents, parents_type)
 
     def __extract_member(self, cexpr, obj, offset, parents, parents_type):
-        if parents_type[0] == 'cast':
+        if parents_type[0] == "cast":
             default_tinfo = parents[0].type
             cexpr = parents[0]
             del parents_type[0]
@@ -240,8 +297,8 @@ class SearchVisitor(api.ObjectVisitor):
         else:
             default_tinfo = const.PX_WORD_TINFO
 
-        if parents_type[0] in ('idx', 'ptr'):
-            if parents_type[1] == 'cast':
+        if parents_type[0] in ("idx", "ptr"):
+            if parents_type[1] == "cast":
                 default_tinfo = parents[1].type
                 cexpr = parents[0]
                 del parents_type[0]
@@ -249,13 +306,15 @@ class SearchVisitor(api.ObjectVisitor):
             else:
                 default_tinfo = self.__deref_tinfo(default_tinfo)
 
-            if parents_type[1] == 'asg':
+            if parents_type[1] == "asg":
                 if parents[1].x == parents[0]:
                     # *(TYPE *)(var + x) = ???
                     obj_ea = self.__extract_obj_ea(parents[1].y)
-                    return self._get_member(offset, cexpr, obj, parents[1].y.type, obj_ea)
+                    return self._get_member(
+                        offset, cexpr, obj, parents[1].y.type, obj_ea
+                    )
                 return self._get_member(offset, cexpr, obj, parents[1].x.type)
-            elif parents_type[1] == 'call':
+            elif parents_type[1] == "call":
                 if parents[1].x == parents[0]:
                     # ((type (__some_call *)(..., ..., ...)var[idx])(..., ..., ...)
                     # ((type (__some_call *)(..., ..., ...)*(TYPE *)(var + x))(..., ..., ...)
@@ -266,12 +325,12 @@ class SearchVisitor(api.ObjectVisitor):
                 return self._get_member(offset, cexpr, obj, tinfo)
             return self._get_member(offset, cexpr, obj, default_tinfo)
 
-        elif parents_type[0] == 'call':
+        elif parents_type[0] == "call":
             # call(..., (TYPE)(var + x), ...)
             tinfo = self._parse_call(parents[0], cexpr, offset)
             return self._get_member(offset, cexpr, obj, tinfo)
 
-        elif parents_type[0] == 'asg':
+        elif parents_type[0] == "asg":
             if parents[0].y == cexpr:
                 # other_obj = (TYPE) (var + offset)
                 self._parse_left_assignee(parents[1].x, offset)
@@ -289,21 +348,27 @@ class SearchVisitor(api.ObjectVisitor):
     def __deref_tinfo(tinfo):
         if tinfo.is_ptr():
             if tinfo.get_ptrarr_objsize() == 1:
-                if tinfo.equals_to(const.PCHAR_TINFO) or tinfo.equals_to(const.CONST_PCHAR_TINFO):
+                if tinfo.equals_to(const.PCHAR_TINFO) or tinfo.equals_to(
+                    const.CONST_PCHAR_TINFO
+                ):
                     return const.CHAR_TINFO
-                return None         # Turns into VoidMember
+                return None  # Turns into VoidMember
             return tinfo.get_pointed_object()
         return tinfo
 
 
 class NewShallowSearchVisitor(SearchVisitor, api.ObjectDownwardsVisitor):
     def __init__(self, cfunc, origin, obj, temporary_structure):
-        super(NewShallowSearchVisitor, self).__init__(cfunc, origin, obj, temporary_structure)
+        super(NewShallowSearchVisitor, self).__init__(
+            cfunc, origin, obj, temporary_structure
+        )
 
 
 class NewDeepSearchVisitor(SearchVisitor, api.RecursiveObjectDownwardsVisitor):
     def __init__(self, cfunc, origin, obj, temporary_structure):
-        super(NewDeepSearchVisitor, self).__init__(cfunc, origin, obj, temporary_structure)
+        super(NewDeepSearchVisitor, self).__init__(
+            cfunc, origin, obj, temporary_structure
+        )
 
 
 class DeepReturnVisitor(NewDeepSearchVisitor):

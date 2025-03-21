@@ -4,11 +4,19 @@ from . import actions
 import HexRaysPyTools.core.helper as helper
 
 
-RecastLocalVariable = namedtuple('RecastLocalVariable', ['recast_tinfo', 'local_variable'])
-RecastGlobalVariable = namedtuple('RecastGlobalVariable', ['recast_tinfo', 'global_variable_ea'])
-RecastArgument = namedtuple('RecastArgument', ['recast_tinfo', 'arg_idx', 'func_ea', 'func_tinfo'])
-RecastReturn = namedtuple('RecastReturn', ['recast_tinfo', 'func_ea'])
-RecastStructure = namedtuple('RecastStructure', ['recast_tinfo', 'structure_name', 'field_offset'])
+RecastLocalVariable = namedtuple(
+    "RecastLocalVariable", ["recast_tinfo", "local_variable"]
+)
+RecastGlobalVariable = namedtuple(
+    "RecastGlobalVariable", ["recast_tinfo", "global_variable_ea"]
+)
+RecastArgument = namedtuple(
+    "RecastArgument", ["recast_tinfo", "arg_idx", "func_ea", "func_tinfo"]
+)
+RecastReturn = namedtuple("RecastReturn", ["recast_tinfo", "func_ea"])
+RecastStructure = namedtuple(
+    "RecastStructure", ["recast_tinfo", "structure_name", "field_offset"]
+)
 
 
 class RecastItemLeft(actions.HexRaysPopupAction):
@@ -30,7 +38,11 @@ class RecastItemLeft(actions.HexRaysPopupAction):
         child = None
 
         # Look through parents until we found Return, Assignment or Call
-        while expression and expression.op not in (idaapi.cot_asg, idaapi.cit_return, idaapi.cot_call):
+        while expression and expression.op not in (
+            idaapi.cot_asg,
+            idaapi.cit_return,
+            idaapi.cot_call,
+        ):
             child = expression.to_specific_type
             expression = cfunc.body.find_parent_of(expression)
         if not expression:
@@ -39,11 +51,15 @@ class RecastItemLeft(actions.HexRaysPopupAction):
         expression = expression.to_specific_type
         if expression.op == idaapi.cot_asg:
 
-            if expression.x.opname not in ('var', 'obj', 'memptr', 'memref'):
+            if expression.x.opname not in ("var", "obj", "memptr", "memref"):
                 return
 
             right_expr = expression.y
-            right_tinfo = right_expr.x.type if right_expr.op == idaapi.cot_cast else right_expr.type
+            right_tinfo = (
+                right_expr.x.type
+                if right_expr.op == idaapi.cot_cast
+                else right_expr.type
+            )
 
             # Check if both left and right parts of expression are of the same types.
             # If not then we can recast then.
@@ -103,7 +119,9 @@ class RecastItemLeft(actions.HexRaysPopupAction):
                 struct_tinfo = expression.x.x.type.get_pointed_object()
                 funcptr_tinfo = expression.x.type
                 helper.set_funcptr_argument(funcptr_tinfo, arg_index, arg_tinfo)
-                return RecastStructure(funcptr_tinfo, struct_tinfo.dstr(), expression.x.m)
+                return RecastStructure(
+                    funcptr_tinfo, struct_tinfo.dstr(), expression.x.m
+                )
 
             if child.op == idaapi.cot_ref:
                 if child.x.op == idaapi.cot_memref and child.x.m == 0:
@@ -135,10 +153,18 @@ class RecastItemLeft(actions.HexRaysPopupAction):
             return False
 
         if isinstance(ri, RecastLocalVariable):
-            self.set_label('Recast Variable "{0}" to {1}'.format(ri.local_variable.name, ri.recast_tinfo.dstr()))
+            self.set_label(
+                'Recast Variable "{0}" to {1}'.format(
+                    ri.local_variable.name, ri.recast_tinfo.dstr()
+                )
+            )
         elif isinstance(ri, RecastGlobalVariable):
             gvar_name = idaapi.get_name(ri.global_variable_ea)
-            self.set_label('Recast Global Variable "{0}" to {1}'.format(gvar_name, ri.recast_tinfo.dstr()))
+            self.set_label(
+                'Recast Global Variable "{0}" to {1}'.format(
+                    gvar_name, ri.recast_tinfo.dstr()
+                )
+            )
         elif isinstance(ri, RecastArgument):
             self.set_label("Recast Argument")
         elif isinstance(ri, RecastStructure):
@@ -159,7 +185,9 @@ class RecastItemLeft(actions.HexRaysPopupAction):
             hx_view.set_lvar_type(ri.local_variable, ri.recast_tinfo)
 
         elif isinstance(ri, RecastGlobalVariable):
-            idaapi.apply_tinfo(ri.global_variable_ea, ri.recast_tinfo, idaapi.TINFO_DEFINITE)
+            idaapi.apply_tinfo(
+                ri.global_variable_ea, ri.recast_tinfo, idaapi.TINFO_DEFINITE
+            )
 
         elif isinstance(ri, RecastArgument):
             if ri.recast_tinfo.is_array():
@@ -196,7 +224,9 @@ class RecastItemLeft(actions.HexRaysPopupAction):
                 tinfo.get_udt_details(udt_data)
                 udt_data[idx].type = ri.recast_tinfo
                 tinfo.create_udt(udt_data, idaapi.BTF_STRUCT)
-                tinfo.set_numbered_type(idaapi.cvar.idati, ordinal, idaapi.NTF_REPLACE, ri.structure_name)
+                tinfo.set_numbered_type(
+                    idaapi.cvar.idati, ordinal, idaapi.NTF_REPLACE, ri.structure_name
+                )
         else:
             raise NotImplementedError
 
@@ -266,7 +296,7 @@ class RecastItemRight(RecastItemLeft):
 
     @staticmethod
     def _check_potential_array(cfunc, expr):
-        """ Checks `call(..., &buffer, ..., number)` and returns information for recasting """
+        """Checks `call(..., &buffer, ..., number)` and returns information for recasting"""
         if expr.op != idaapi.cot_var:
             return
 
@@ -286,10 +316,15 @@ class RecastItemRight(RecastItemLeft):
                 if number:
                     variable = cfunc.lvars[var_expr.v.idx]
                     char_array_tinfo = idaapi.tinfo_t()
-                    char_array_tinfo.create_array(idaapi.tinfo_t(idaapi.BTF_CHAR), number)
-                    idaapi.update_action_label(RecastItemRight.name, 'Recast Variable "{}" to "{}"'.format(
-                        variable.name, char_array_tinfo.dstr()
-                    ))
+                    char_array_tinfo.create_array(
+                        idaapi.tinfo_t(idaapi.BTF_CHAR), number
+                    )
+                    idaapi.update_action_label(
+                        RecastItemRight.name,
+                        'Recast Variable "{}" to "{}"'.format(
+                            variable.name, char_array_tinfo.dstr()
+                        ),
+                    )
                     return RecastLocalVariable(char_array_tinfo, variable)
 
 

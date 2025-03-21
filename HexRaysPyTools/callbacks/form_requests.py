@@ -44,7 +44,7 @@ class ShowClasses(actions.Action):
         super(ShowClasses, self).__init__()
 
     def activate(self, ctx):
-        tform = idaapi.find_widget('Classes')
+        tform = idaapi.find_widget("Classes")
         if not tform:
             class_viewer = ClassViewer(classes.ProxyModel(), classes.TreeModel())
             class_viewer.Show()
@@ -57,7 +57,9 @@ class ShowClasses(actions.Action):
 
 show_classes = ShowClasses()
 actions.action_manager.register(show_classes)
-idaapi.attach_action_to_menu('View/Open subviews/Local types', show_classes.name, idaapi.SETMENU_APP)
+idaapi.attach_action_to_menu(
+    "View/Open subviews/Local types", show_classes.name, idaapi.SETMENU_APP
+)
 
 
 class ShowStructureBuilder(actions.HexRaysPopupAction):

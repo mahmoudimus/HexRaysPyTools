@@ -1,11 +1,12 @@
-from PyQt5 import QtCore, QtWidgets
-
 import idaapi
+from PyQt5 import QtCore, QtWidgets
 
 
 class MyChoose(idaapi.Choose):
     def __init__(self, items, title, cols, icon=-1):
-        idaapi.Choose.__init__(self, title, cols, flags=idaapi.Choose.CH_MODAL, icon=icon)
+        idaapi.Choose.__init__(
+            self, title, cols, flags=idaapi.Choose.CH_MODAL, icon=icon
+        )
         self.items = items
 
     def OnClose(self):
@@ -36,7 +37,7 @@ class StructureBuilder(idaapi.PluginForm):
             # "QPushButton::pressed {background-color: #ccccff}"
         )
         self.parent.resize(400, 600)
-        self.parent.setWindowTitle('Structure Builder')
+        self.parent.setWindowTitle("Structure Builder")
 
         btn_finalize = QtWidgets.QPushButton("&Finalize")
         btn_disable = QtWidgets.QPushButton("&Disable")
@@ -47,7 +48,9 @@ class StructureBuilder(idaapi.PluginForm):
         btn_unpack = QtWidgets.QPushButton("&Unpack")
         btn_remove = QtWidgets.QPushButton("&Remove")
         btn_resolve = QtWidgets.QPushButton("Resolve")
-        btn_clear = QtWidgets.QPushButton("Clear")  # Clear button doesn't have shortcut because it can fuck up all work
+        btn_clear = QtWidgets.QPushButton(
+            "Clear"
+        )  # Clear button doesn't have shortcut because it can fuck up all work
         btn_recognize = QtWidgets.QPushButton("Recognize Shape")
         btn_recognize.setStyleSheet("QPushButton {width: 100px; height: 20px;}")
 
@@ -67,7 +70,9 @@ class StructureBuilder(idaapi.PluginForm):
         struct_view.verticalHeader().setVisible(False)
         struct_view.verticalHeader().setDefaultSectionSize(24)
         struct_view.horizontalHeader().setStretchLastSection(True)
-        struct_view.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        struct_view.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeToContents
+        )
 
         grid_box = QtWidgets.QGridLayout()
         grid_box.setSpacing(0)
@@ -75,13 +80,17 @@ class StructureBuilder(idaapi.PluginForm):
         grid_box.addWidget(btn_enable, 0, 1)
         grid_box.addWidget(btn_disable, 0, 2)
         grid_box.addWidget(btn_origin, 0, 3)
-        grid_box.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding), 0, 5)
+        grid_box.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding), 0, 5
+        )
         grid_box.addWidget(btn_array, 1, 0)
         grid_box.addWidget(btn_pack, 1, 1)
         grid_box.addWidget(btn_unpack, 1, 2)
         grid_box.addWidget(btn_remove, 1, 3)
         grid_box.addWidget(btn_resolve, 0, 4)
-        grid_box.addItem(QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding), 1, 5)
+        grid_box.addItem(
+            QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding), 1, 5
+        )
         grid_box.addWidget(btn_recognize, 0, 6)
         grid_box.addWidget(btn_clear, 1, 6)
 
@@ -91,17 +100,39 @@ class StructureBuilder(idaapi.PluginForm):
         self.parent.setLayout(vertical_box)
 
         btn_finalize.clicked.connect(lambda: self.structure_model.finalize())
-        btn_disable.clicked.connect(lambda: self.structure_model.disable_rows(struct_view.selectedIndexes()))
-        btn_enable.clicked.connect(lambda: self.structure_model.enable_rows(struct_view.selectedIndexes()))
-        btn_origin.clicked.connect(lambda: self.structure_model.set_origin(struct_view.selectedIndexes()))
-        btn_array.clicked.connect(lambda: self.structure_model.make_array(struct_view.selectedIndexes()))
-        btn_pack.clicked.connect(lambda: self.structure_model.pack_substructure(struct_view.selectedIndexes()))
-        btn_unpack.clicked.connect(lambda: self.structure_model.unpack_substructure(struct_view.selectedIndexes()))
-        btn_remove.clicked.connect(lambda: self.structure_model.remove_items(struct_view.selectedIndexes()))
+        btn_disable.clicked.connect(
+            lambda: self.structure_model.disable_rows(struct_view.selectedIndexes())
+        )
+        btn_enable.clicked.connect(
+            lambda: self.structure_model.enable_rows(struct_view.selectedIndexes())
+        )
+        btn_origin.clicked.connect(
+            lambda: self.structure_model.set_origin(struct_view.selectedIndexes())
+        )
+        btn_array.clicked.connect(
+            lambda: self.structure_model.make_array(struct_view.selectedIndexes())
+        )
+        btn_pack.clicked.connect(
+            lambda: self.structure_model.pack_substructure(
+                struct_view.selectedIndexes()
+            )
+        )
+        btn_unpack.clicked.connect(
+            lambda: self.structure_model.unpack_substructure(
+                struct_view.selectedIndexes()
+            )
+        )
+        btn_remove.clicked.connect(
+            lambda: self.structure_model.remove_items(struct_view.selectedIndexes())
+        )
         btn_resolve.clicked.connect(lambda: self.structure_model.resolve_types())
         btn_clear.clicked.connect(lambda: self.structure_model.clear())
-        btn_recognize.clicked.connect(lambda: self.structure_model.recognize_shape(struct_view.selectedIndexes()))
-        struct_view.activated[QtCore.QModelIndex].connect(self.structure_model.activated)
+        btn_recognize.clicked.connect(
+            lambda: self.structure_model.recognize_shape(struct_view.selectedIndexes())
+        )
+        struct_view.activated[QtCore.QModelIndex].connect(
+            self.structure_model.activated
+        )
         self.structure_model.dataChanged.connect(struct_view.clearSelection)
 
     def OnClose(self, form):
@@ -130,7 +161,7 @@ class StructureGraphViewer(idaapi.GraphViewer):
         return self.graph.local_types[self[node_id]].name_and_color
 
     def OnHint(self, node_id):
-        """ Try-catch clause because IDA sometimes attempts to use old information to get hint """
+        """Try-catch clause because IDA sometimes attempts to use old information to get hint"""
         try:
             ordinal = self[node_id]
             return self.graph.local_types[ordinal].hint
@@ -155,7 +186,9 @@ class ClassViewer(idaapi.PluginForm):
 
         self.action_collapse = QtWidgets.QAction("Collapse all", self.class_tree)
         self.action_expand = QtWidgets.QAction("Expand all", self.class_tree)
-        self.action_set_arg = QtWidgets.QAction("Set First Argument Type", self.class_tree)
+        self.action_set_arg = QtWidgets.QAction(
+            "Set First Argument Type", self.class_tree
+        )
         self.action_rollback = QtWidgets.QAction("Rollback", self.class_tree)
         self.action_refresh = QtWidgets.QAction("Refresh", self.class_tree)
         self.action_commit = QtWidgets.QAction("Commit", self.class_tree)
@@ -171,7 +204,7 @@ class ClassViewer(idaapi.PluginForm):
         self.init_ui()
 
     def init_ui(self):
-        self.parent.setWindowTitle('Classes')
+        self.parent.setWindowTitle("Classes")
         self.parent.setStyleSheet(
             # "QTreeView::item:!has-children { background-color: #fefbd8; border: 0.5px solid lightgray ;}"
             # "QTreeView::item:has-children { background-color: #80ced6; border-top: 1px solid black ;}"
@@ -192,14 +225,18 @@ class ClassViewer(idaapi.PluginForm):
         self.class_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.class_tree.expandAll()
         self.class_tree.header().setStretchLastSection(True)
-        self.class_tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        self.class_tree.header().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeToContents
+        )
         self.class_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 
         self.action_collapse.triggered.connect(self.class_tree.collapseAll)
         self.action_expand.triggered.connect(self.class_tree.expandAll)
         self.action_set_arg.triggered.connect(
             lambda: self.class_model.set_first_argument_type(
-                list(map(self.proxy_model.mapToSource, self.class_tree.selectedIndexes()))
+                list(
+                    map(self.proxy_model.mapToSource, self.class_tree.selectedIndexes())
+                )
             )
         )
         self.action_rollback.triggered.connect(lambda: self.class_model.rollback())
@@ -222,8 +259,12 @@ class ClassViewer(idaapi.PluginForm):
         self.class_tree.activated[QtCore.QModelIndex].connect(
             lambda x: self.class_model.open_function(self.proxy_model.mapToSource(x))
         )
-        self.class_tree.customContextMenuRequested[QtCore.QPoint].connect(self.show_menu)
-        self.line_edit_filter.textChanged[str].connect(self.proxy_model.set_regexp_filter)
+        self.class_tree.customContextMenuRequested[QtCore.QPoint].connect(
+            self.show_menu
+        )
+        self.line_edit_filter.textChanged[str].connect(
+            self.proxy_model.set_regexp_filter
+        )
         # proxy_model.rowsInserted[object].connect(lambda: self.class_tree.setExpanded(object, True))
 
     def OnClose(self, form):
@@ -234,10 +275,12 @@ class ClassViewer(idaapi.PluginForm):
 
     def show_menu(self, point):
         self.action_set_arg.setEnabled(True)
-        indexes = list(map(
-            self.proxy_model.mapToSource,
-            [x for x in self.class_tree.selectedIndexes() if x.column() == 0]
-        ))
+        indexes = list(
+            map(
+                self.proxy_model.mapToSource,
+                [x for x in self.class_tree.selectedIndexes() if x.column() == 0],
+            )
+        )
         if len(indexes) > 1:
             if [x for x in indexes if len(x.internalPointer().children) > 0]:
                 self.action_set_arg.setEnabled(False)

@@ -15,7 +15,7 @@ til_t._fields_ = [
     ("name", ctypes.c_char_p),
     ("desc", ctypes.c_char_p),
     ("nbases", ctypes.c_int),
-    ("base", ctypes.POINTER(ctypes.POINTER(til_t)))
+    ("base", ctypes.POINTER(ctypes.POINTER(til_t))),
 ]
 
 
@@ -38,28 +38,35 @@ def _enable_library_ordinals(library_num):
 
 def choose_til():
     # type: () -> (idaapi.til_t, int, bool)
-    """ Creates a list of loaded libraries, asks user to take one of them and returns it with
-    information about max ordinal and whether it's local or imported library """
+    """Creates a list of loaded libraries, asks user to take one of them and returns it with
+    information about max ordinal and whether it's local or imported library"""
     idati = idaapi.cvar.idati
     list_type_library = [(idati, idati.name, idati.desc)]
     for idx in range(idaapi.cvar.idati.nbases):
-        type_library = idaapi.cvar.idati.base(idx)          # type: idaapi.til_t
+        type_library = idaapi.cvar.idati.base(idx)  # type: idaapi.til_t
         list_type_library.append((type_library, type_library.name, type_library.desc))
 
     library_chooser = forms.MyChoose(
         list([[x[1], x[2]] for x in list_type_library]),
         "Select Library",
-        [["Library", 10 | idaapi.Choose.CHCOL_PLAIN], ["Description", 30 | idaapi.Choose.CHCOL_PLAIN]],
-        69
+        [
+            ["Library", 10 | idaapi.Choose.CHCOL_PLAIN],
+            ["Description", 30 | idaapi.Choose.CHCOL_PLAIN],
+        ],
+        69,
     )
     library_num = library_chooser.Show(True)
     if library_num != -1:
-        selected_library = list_type_library[library_num][0]    # type: idaapi.til_t
+        selected_library = list_type_library[library_num][0]  # type: idaapi.til_t
         max_ordinal = idaapi.get_ordinal_qty(selected_library)
         if max_ordinal == idaapi.BADORD:
             _enable_library_ordinals(library_num - 1)
             max_ordinal = idaapi.get_ordinal_qty(selected_library)
-        print("[DEBUG] Maximal ordinal of lib {0} = {1}".format(selected_library.name, max_ordinal))
+        print(
+            "[DEBUG] Maximal ordinal of lib {0} = {1}".format(
+                selected_library.name, max_ordinal
+            )
+        )
         return selected_library, max_ordinal, library_num == 0
 
 
