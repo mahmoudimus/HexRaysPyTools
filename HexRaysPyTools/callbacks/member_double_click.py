@@ -1,7 +1,7 @@
+import HexRaysPyTools.core.helper as helper
 import idaapi
 
 from . import callbacks
-import HexRaysPyTools.core.helper as helper
 
 
 class MemberDoubleClick(callbacks.HexRaysEventHandler):
@@ -44,7 +44,7 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
                 func_name, class_tinfo, vtable_offset
             )
             if func_ea:
-                idaapi.open_pseudocode(func_ea, 0)
+                idaapi.jumpto(func_ea)
                 return 1
 
 
